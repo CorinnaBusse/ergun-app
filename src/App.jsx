@@ -142,7 +142,7 @@ function SetupGraphic({ eps, h_mm, overflow, Dpipe, dp, Lbed }) {
   const thinnedBalls = balls.length > 500 ? balls.filter((_, i) => i % Math.ceil(balls.length / 500) === 0) : balls;
 
   // Manometer (oben), Skala in mm — offene Enden oben, Bogen unten
-  const legLeftX = 93, legRightX = 205, halfW = 6;
+  const legLeftX = 115, legRightX = 183, halfW = 6;
   const tubeTop = 42, tubeBottom = 148, bendY = 162;
   const baseY = 97; // Nulllinie (h = 0)
   const mmToPx = 0.3;
@@ -319,7 +319,7 @@ export default function ErgunMonitor() {
   const qPad = (qMax - qMin) * 0.12 || qMax * 0.2 || 1;
   const hPad = (hMax - hMin) * 0.12 || hMax * 0.2 || 1;
   const xDomainBase = [Math.max(0, qMin - qPad), qMax + qPad];
-  const yDomainBase = [Math.min(0, hMin - hPad), hMax + hPad];
+  const yDomainBase = [0, hMax + hPad];
   const displayDomain = zoomDomain || [...xDomainBase, ...yDomainBase];
   const xDomain = [displayDomain[0], displayDomain[1]];
   const yDomain = [displayDomain[2], displayDomain[3]];
@@ -336,7 +336,7 @@ export default function ErgunMonitor() {
     const factor = e.deltaY > 0 ? 1.25 : 0.8;
     const newXMin = anchorX - (anchorX - cur[0]) * factor;
     const newXMax = anchorX + (cur[1] - anchorX) * factor;
-    const newYMin = anchorY - (anchorY - cur[2]) * factor;
+    const newYMin = Math.max(0, anchorY - (anchorY - cur[2]) * factor);
     const newYMax = anchorY + (cur[3] - anchorY) * factor;
     const fullXSpan = xDomainBase[1] - xDomainBase[0];
     if (newXMax - newXMin >= fullXSpan * 0.999) { setZoomDomain(null); return; }
@@ -410,7 +410,7 @@ export default function ErgunMonitor() {
               </div>
             </PanelBox>
 
-            <PanelBox title="Medium &amp; Betrieb (live änderbar)">
+            <PanelBox title="Medium &amp; Betrieb (nur Q live änderbar)">
               <div className="flex gap-2 mb-3">
                 <button onClick={() => handleMediumSwitch("luft")} className="medium-btn" style={{
                   flex: 1, background: medium === "luft" ? OHM_BLUE : "#fff", color: medium === "luft" ? "#fff" : INK,
@@ -422,17 +422,19 @@ export default function ErgunMonitor() {
               <Field label="Volumenstrom Q" value={`${de(Q, 2)} L/min`}>
                 <LogSlider min={medium === "luft" ? 5 : 0.2} max={medium === "luft" ? 150 : 3} value={Q} onChange={setQ} onCommit={handleQCommit} />
               </Field>
-              <Field label="Temperatur T" value={`${de(tempC, 0)} °C`}>
-                <LinearSlider min={0} max={100} step={1} value={tempC} onChange={setTempC} />
+              <Field label="Temperatur T" value={`${de(tempC, 0)} °C`} locked={locked}>
+                <LinearSlider min={0} max={100} step={1} value={tempC} onChange={setTempC} disabled={locked} />
               </Field>
-              <Field label="Porosität ε" value={de(eps, 2)}>
-                <LinearSlider min={0.3} max={0.6} step={0.01} value={eps} onChange={setEps} />
+              <Field label="Porosität ε" value={de(eps, 2)} locked={locked}>
+                <LinearSlider min={0.3} max={0.6} step={0.01} value={eps} onChange={setEps} disabled={locked} />
               </Field>
-              <Field label="Messfehler σ (Ablesegenauigkeit)" value={`± ${de(noiseSigma, 1)} mm`}>
-                <LinearSlider min={0} max={5} step={0.1} value={noiseSigma} onChange={setNoiseSigma} />
+              <Field label="Messfehler σ (Ablesegenauigkeit)" value={`± ${de(noiseSigma, 1)} mm`} locked={locked}>
+                <LinearSlider min={0} max={5} step={0.1} value={noiseSigma} onChange={setNoiseSigma} disabled={locked} />
               </Field>
               <div style={{ fontFamily: SANS, fontSize: 10.5, color: GRAY }}>
-                Ein Punkt wird erst aufgenommen, wenn der Q-Regler losgelassen wird (oder beim Mediumwechsel) — nicht bei jeder Zwischenposition. Auf die Ablesung wird ein zufälliger Messfehler aufaddiert.
+                {locked
+                  ? "Nur Q bleibt während der Sammlung änderbar — Temperatur, Porosität und Messfehler sind für diese Kennlinie gesperrt."
+                  : "Ein Punkt wird erst aufgenommen, wenn der Q-Regler losgelassen wird (oder beim Mediumwechsel) — nicht bei jeder Zwischenposition. Auf die Ablesung wird ein zufälliger Messfehler aufaddiert."}
               </div>
             </PanelBox>
 
