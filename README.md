@@ -1,4 +1,4 @@
-# Tank·Monitor — Füllstandssimulation
+# DRUCKVERLUST·MONITOR
 
 Live-Simulation eines Druckverlustprüfstands im Ohm-Corporate-Design.
 
