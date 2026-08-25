@@ -93,6 +93,39 @@ function LogSlider({ min, max, value, onChange, disabled, onCommit }) {
     onChange={(e) => onChange(posToLog(parseFloat(e.target.value), min, max))}
     onMouseUp={onCommit} onTouchEnd={onCommit} onKeyUp={onCommit} />;
 }
+function NumberInput({ min, max, step, value, onChange, onCommit, disabled }) {
+  const [raw, setRaw] = useState(String(value));
+  const editingRef = useRef(false);
+  useEffect(() => {
+    if (!editingRef.current) setRaw(String(value));
+  }, [value]);
+
+  const commit = () => {
+    editingRef.current = false;
+    let v = parseFloat(raw.replace(",", "."));
+    if (!isFinite(v)) v = value;
+    v = Math.min(max, Math.max(min, v));
+    setRaw(String(v));
+    onChange(v);
+    if (onCommit) onCommit();
+  };
+
+  return (
+    <input
+      className="ohm-number-input"
+      type="number"
+      min={min}
+      max={max}
+      step={step}
+      value={raw}
+      disabled={disabled}
+      onFocus={() => { editingRef.current = true; }}
+      onChange={(e) => setRaw(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+    />
+  );
+}
 function PanelBox({ title, children }) {
   return (
     <div style={{ background: PANEL, border: `1px solid ${PANEL_BORDER}`, borderRadius: 8, padding: "14px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -372,6 +405,10 @@ export default function ErgunMonitor() {
         input.ohm-slider:disabled::-moz-range-thumb { background: #B9B7B4; }
         input.ohm-slider:disabled { cursor: not-allowed; }
         .ohm-btn:active { transform: translateY(1px); }
+        input.ohm-number-input { width:100%; box-sizing:border-box; font-family: ${MONO}; font-size:12px; color:${INK};
+          border:1px solid ${PANEL_BORDER}; border-radius:4px; padding:5px 8px; background:#fff; }
+        input.ohm-number-input:focus { outline:none; border-color:${OHM_RED}; }
+        input.ohm-number-input:disabled { background:#F4F4F3; color:${GRAY}; cursor:not-allowed; }
         .medium-btn { font-family: ${SANS}; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 5px; cursor: pointer; }
       `}</style>
 
@@ -420,7 +457,9 @@ export default function ErgunMonitor() {
                   border: `2px solid ${OHM_RED}` }}>Wasser</button>
               </div>
               <Field label="Volumenstrom V̇" value={`${de(Q, 2)} L/min`}>
-                <LogSlider min={medium === "luft" ? 5 : 0.2} max={medium === "luft" ? 150 : 3} value={Q} onChange={setQ} onCommit={handleQCommit} />
+                {medium === "luft"
+                  ? <NumberInput min={5} max={200} step={0.5} value={Q} onChange={setQ} onCommit={handleQCommit} />
+                  : <LogSlider min={0.2} max={3} value={Q} onChange={setQ} onCommit={handleQCommit} />}
               </Field>
               <Field label="Temperatur T" value={`${de(tempC, 0)} °C`} locked={locked}>
                 <LinearSlider min={0} max={100} step={1} value={tempC} onChange={setTempC} disabled={locked} />
@@ -434,7 +473,7 @@ export default function ErgunMonitor() {
               <div style={{ fontFamily: SANS, fontSize: 10.5, color: GRAY }}>
                 {locked
                   ? "Nur V̇ bleibt während der Sammlung änderbar — Temperatur, Porosität und Messfehler sind für diese Kennlinie gesperrt."
-                  : "Ein Punkt wird erst aufgenommen, wenn der V̇-Regler losgelassen wird (oder beim Mediumwechsel) — nicht bei jeder Zwischenposition. Auf die Ablesung wird ein zufälliger Messfehler aufaddiert."}
+                  : "Ein Punkt wird erst aufgenommen, wenn der V̇-Wert bestätigt wird (Regler loslassen bzw. Eingabefeld verlassen/Enter) oder beim Mediumwechsel — nicht bei jeder Zwischenposition. Auf die Ablesung wird ein zufälliger Messfehler aufaddiert."}
               </div>
             </PanelBox>
 
