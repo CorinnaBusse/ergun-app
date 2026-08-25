@@ -352,7 +352,7 @@ export default function ErgunMonitor() {
     return (
       <div style={{ background: PANEL, border: `1px solid ${PANEL_BORDER}`, borderRadius: 4, padding: "6px 10px", fontFamily: MONO, fontSize: 11, color: INK, boxShadow: "0 2px 6px rgba(0,0,0,0.12)" }}>
         <div style={{ opacity: 0.6, marginBottom: 4 }}>{p.medium === "luft" ? "Luft" : "Wasser"}</div>
-        <div style={{ color: p.medium === "luft" ? OHM_BLUE : OHM_RED, fontWeight: 700 }}>Q = {de(p.Q, 2)} L/min</div>
+        <div style={{ color: p.medium === "luft" ? OHM_BLUE : OHM_RED, fontWeight: 700 }}>V̇ = {de(p.Q, 2)} L/min</div>
         <div style={{ color: p.medium === "luft" ? OHM_BLUE : OHM_RED, fontWeight: 700 }}>Δh = {de(p.h, 2)} mm (gemessen)</div>
         <div style={{ opacity: 0.7 }}>Δh_theor. = {de(p.hTrue, 2)} mm</div>
       </div>
@@ -386,7 +386,7 @@ export default function ErgunMonitor() {
               </h1>
             </div>
             <p style={{ fontFamily: SANS, fontSize: 12, color: GRAY, marginTop: 6 }}>
-              Fakultät Angewandte Chemie · Druckverlust in Schüttschichten · Kennlinie Q vs. Δh
+              Fakultät Angewandte Chemie · Druckverlust in Schüttschichten · Kennlinie V̇ vs. Δh
             </p>
           </div>
           <div style={{ fontFamily: MONO, fontSize: 11, color: GRAY }}>{collected.length} Punkte gesammelt</div>
@@ -410,7 +410,7 @@ export default function ErgunMonitor() {
               </div>
             </PanelBox>
 
-            <PanelBox title="Medium &amp; Betrieb (nur Q live änderbar)">
+            <PanelBox title="Medium &amp; Betrieb (nur V̇ live änderbar)">
               <div className="flex gap-2 mb-3">
                 <button onClick={() => handleMediumSwitch("luft")} className="medium-btn" style={{
                   flex: 1, background: medium === "luft" ? OHM_BLUE : "#fff", color: medium === "luft" ? "#fff" : INK,
@@ -419,7 +419,7 @@ export default function ErgunMonitor() {
                   flex: 1, background: medium === "wasser" ? OHM_RED : "#fff", color: medium === "wasser" ? "#fff" : INK,
                   border: `2px solid ${OHM_RED}` }}>Wasser</button>
               </div>
-              <Field label="Volumenstrom Q" value={`${de(Q, 2)} L/min`}>
+              <Field label="Volumenstrom V̇" value={`${de(Q, 2)} L/min`}>
                 <LogSlider min={medium === "luft" ? 5 : 0.2} max={medium === "luft" ? 150 : 3} value={Q} onChange={setQ} onCommit={handleQCommit} />
               </Field>
               <Field label="Temperatur T" value={`${de(tempC, 0)} °C`} locked={locked}>
@@ -433,8 +433,8 @@ export default function ErgunMonitor() {
               </Field>
               <div style={{ fontFamily: SANS, fontSize: 10.5, color: GRAY }}>
                 {locked
-                  ? "Nur Q bleibt während der Sammlung änderbar — Temperatur, Porosität und Messfehler sind für diese Kennlinie gesperrt."
-                  : "Ein Punkt wird erst aufgenommen, wenn der Q-Regler losgelassen wird (oder beim Mediumwechsel) — nicht bei jeder Zwischenposition. Auf die Ablesung wird ein zufälliger Messfehler aufaddiert."}
+                  ? "Nur V̇ bleibt während der Sammlung änderbar — Temperatur, Porosität und Messfehler sind für diese Kennlinie gesperrt."
+                  : "Ein Punkt wird erst aufgenommen, wenn der V̇-Regler losgelassen wird (oder beim Mediumwechsel) — nicht bei jeder Zwischenposition. Auf die Ablesung wird ein zufälliger Messfehler aufaddiert."}
               </div>
             </PanelBox>
 
@@ -499,7 +499,7 @@ export default function ErgunMonitor() {
                     <CartesianGrid stroke={CHART_GRID} strokeDasharray="2 4" />
                     <XAxis dataKey="Q" type="number" domain={xDomain} allowDataOverflow stroke={GRAY} tick={{ fontFamily: MONO, fontSize: 11, fill: GRAY }}
                       tickFormatter={(v) => de(v, 1)}
-                      label={{ value: "Q / L·min⁻¹", position: "insideBottom", offset: -14, fill: GRAY, fontSize: 12, fontFamily: SANS, fontWeight: 600 }} />
+                      label={{ value: "V̇ / L·min⁻¹", position: "insideBottom", offset: -14, fill: GRAY, fontSize: 12, fontFamily: SANS, fontWeight: 600 }} />
                     <YAxis dataKey="h" type="number" domain={yDomain} allowDataOverflow stroke={GRAY} tick={{ fontFamily: MONO, fontSize: 11, fill: GRAY }}
                       tickFormatter={(v) => de(v, 1)} width={54}
                       label={{ value: "Δh / mm", angle: -90, position: "insideLeft", offset: 8, fill: INK, fontSize: 12.5, fontFamily: SANS, fontWeight: 600, style: { textAnchor: "middle" } }} />
