@@ -23,7 +23,7 @@ const MONO = "'JetBrains Mono', ui-monospace, monospace";
 const R_GAS = 8.314, P_ATM = 101325, M_AIR = 0.02896;
 const RHO_MANOMETER = 1000; // kg/m3, gefärbtes Wasser im Manometer
 const G = 9.81;
-const H_MAX_MM = 150; // mm, maximaler Ausschlag je Schenkel
+const H_MAX_MM = 300; // mm, maximaler Ausschlag je Schenkel
 const EPS = 0.4; // Porosität, fest
 const TEMP_C = 20; // °C, fest
 const NOISE_SIGMA = 1.0; // mm, Messfehler (Ablesegenauigkeit), fest
@@ -124,13 +124,16 @@ function PanelBox({ title, children }) {
 /* ---------------------------------------------------------------------
    AUFBAU-GRAFIK — Schüttung + U-Rohrmanometer
 --------------------------------------------------------------------- */
-function SetupGraphic({ eps, h_mm, overflow, Dpipe, dp, Lbed }) {
+function SetupGraphic({ eps, h_mm, overflow, Dpipe, dp, Lbed, Q }) {
   const seedRng = (i) => { const x = Math.sin(i * 12.9898) * 43758.5453; return x - Math.floor(x); };
+  // Animationsdauer der Strömungspfeile skaliert invers mit V̇ — höherer Volumenstrom = schnellere Pfeile
+  const flowDur = Math.min(3, Math.max(0.4, 30 / Math.max(1, Q)));
+  const CHEVRON = "-4,-3 -4,3 4,0";
 
   // Rohrdurchmesser -> Schüttungshöhe im Bild; Länge -> Schüttungsbreite; beides bleibt zentriert
   const bedH = Math.max(18, Math.min(92, Dpipe * 7));
   const bedW = Math.max(90, Math.min(270, Lbed * 6.5));
-  const bedCenterY = 221, bedCenterX = 150;
+  const bedCenterY = 235, bedCenterX = 150;
   const bedX = bedCenterX - bedW / 2, bedY = bedCenterY - bedH / 2;
 
   // Kugeldurchmesser relativ zum Rohrdurchmesser bestimmt die Kugelgröße im Bild (Wandeffekt sichtbar)
@@ -167,7 +170,7 @@ function SetupGraphic({ eps, h_mm, overflow, Dpipe, dp, Lbed }) {
   const leftY = Math.min(tubeBottom - 4, Math.max(tubeTop + 4, baseY + (hClamped / 2) * mmToPx));
   const rightY = Math.min(tubeBottom - 4, Math.max(tubeTop + 4, baseY - (hClamped / 2) * mmToPx));
 
-  const ticks = [-100, -50, 0, 50, 100];
+  const ticks = [-150, -100, -50, 0, 50, 100, 150];
 
   // Messstellen an der Schüttung + Leitungen, die außen am Manometer vorbei nach oben
   // und dann in die offenen Rohrenden führen
@@ -176,7 +179,7 @@ function SetupGraphic({ eps, h_mm, overflow, Dpipe, dp, Lbed }) {
   const routeY = 30;
 
   return (
-    <svg viewBox="0 0 300 260" style={{ width: "100%", height: "100%" }}>
+    <svg viewBox="0 0 300 300" style={{ width: "100%", height: "100%" }}>
       {/* Skala */}
       <g>
         {ticks.map((tv) => {
@@ -220,9 +223,15 @@ function SetupGraphic({ eps, h_mm, overflow, Dpipe, dp, Lbed }) {
       <text x={tapLeftX} y={bedY + 12} textAnchor="middle" fontFamily={MONO} fontSize="8" fill={GRAY}>p₁</text>
       <text x={tapRightX} y={bedY + 12} textAnchor="middle" fontFamily={MONO} fontSize="8" fill={GRAY}>p₂</text>
 
-      {/* Zulauf (links) */}
+      {/* Zulauf (links) — Luft, mit fließenden Pfeilen sichtbar gemacht */}
       <line x1={0} y1={bedY + bedH / 2} x2={bedX} y2={bedY + bedH / 2} stroke="#B9B7B4" strokeWidth={7} />
-      <polygon points={`${bedX - 4},${bedY + bedH / 2 - 5} ${bedX - 4},${bedY + bedH / 2 + 5} ${bedX + 5},${bedY + bedH / 2}`} fill={OHM_RED} />
+      <text x={4} y={bedY + bedH / 2 - 10} textAnchor="start" fontFamily={SANS} fontWeight="700" fontSize="9" fill={OHM_BLUE}>Luft</text>
+      {[0, 1, 2].map((i) => (
+        <polygon key={i} points={CHEVRON} fill={OHM_BLUE} stroke="#fff" strokeWidth={0.6}>
+          <animateMotion dur={`${flowDur}s`} repeatCount="indefinite" begin={`${-(i / 3) * flowDur}s`}
+            path={`M4,${bedY + bedH / 2} L${bedX - 6},${bedY + bedH / 2}`} />
+        </polygon>
+      ))}
 
       {/* Schüttung (liegend) */}
       <defs>
@@ -236,8 +245,14 @@ function SetupGraphic({ eps, h_mm, overflow, Dpipe, dp, Lbed }) {
         ))}
       </g>
 
-      {/* Ablauf (rechts) */}
+      {/* Ablauf (rechts) — Luft, mit fließenden Pfeilen sichtbar gemacht */}
       <line x1={bedX + bedW} y1={bedY + bedH / 2} x2={300} y2={bedY + bedH / 2} stroke="#B9B7B4" strokeWidth={7} />
+      {[0, 1, 2].map((i) => (
+        <polygon key={i} points={CHEVRON} fill={OHM_BLUE} stroke="#fff" strokeWidth={0.6}>
+          <animateMotion dur={`${flowDur}s`} repeatCount="indefinite" begin={`${-(i / 3) * flowDur}s`}
+            path={`M${bedX + bedW + 6},${bedY + bedH / 2} L296,${bedY + bedH / 2}`} />
+        </polygon>
+      ))}
     </svg>
   );
 }
@@ -388,7 +403,7 @@ export default function ErgunMonitor() {
               </h1>
             </div>
             <p style={{ fontFamily: SANS, fontSize: 12, color: GRAY, marginTop: 6 }}>
-              Fakultät Angewandte Chemie · Druckverlust in Schüttschichten · Kennlinie V̇ vs. Δh
+              Fakultät Angewandte Chemie · Druckverlust in Schüttschichten · Kennlinie Δh vs. V̇
             </p>
           </div>
           <div style={{ fontFamily: MONO, fontSize: 11, color: GRAY }}>{collected.length} Punkte gesammelt</div>
@@ -413,8 +428,8 @@ export default function ErgunMonitor() {
             </PanelBox>
 
             <PanelBox title="Betrieb">
-              <Field label="Volumenstrom V̇" value={`${de(Q, 2)} L/min`}>
-                <NumberInput min={5} max={200} step={0.5} value={Q} onChange={setQ} onCommit={handleQCommit} />
+              <Field label="Volumenstrom V̇" value={`${de(Q, 0)} L/min`}>
+                <NumberInput min={5} max={200} step={1} value={Q} onChange={setQ} onCommit={handleQCommit} />
               </Field>
               <div style={{ fontFamily: SANS, fontSize: 10.5, color: GRAY }}>
                 Ein Punkt wird erst aufgenommen, wenn der V̇-Wert bestätigt wird (Eingabefeld verlassen/Enter) — nicht bei jeder Zwischenposition. Auf die Ablesung wird ein zufälliger Messfehler aufaddiert.
@@ -434,8 +449,8 @@ export default function ErgunMonitor() {
           {/* CENTER: SETUP GRAPHIC */}
           <div className="lg:col-span-4 flex flex-col gap-3">
             <div style={{ position: "relative", background: PANEL, border: `1px solid ${PANEL_BORDER}`, borderRadius: 8,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.05)", padding: 8, height: 300 }}>
-              <SetupGraphic eps={EPS} h_mm={live.h_mm} overflow={overflow} Dpipe={Dpipe} dp={dp} Lbed={Lbed} />
+              boxShadow: "0 1px 3px rgba(0,0,0,0.05)", padding: 8, height: 345 }}>
+              <SetupGraphic eps={EPS} h_mm={live.h_mm} overflow={overflow} Dpipe={Dpipe} dp={dp} Lbed={Lbed} Q={Q} />
             </div>
             <PanelBox title="Δh Manometer (aktuell)">
               <div style={{ fontFamily: MONO, fontSize: 18, color: OHM_RED, fontWeight: 700 }}>{de(live.h_mm, 1)} mm</div>
@@ -448,7 +463,7 @@ export default function ErgunMonitor() {
               boxShadow: "0 1px 3px rgba(0,0,0,0.05)", padding: "10px 8px 4px 0" }}>
               <div className="flex items-center justify-between" style={{ padding: "0 10px", marginBottom: 2 }}>
                 <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11.5, color: INK, textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                  Kennlinie: Volumenstrom vs. Δh
+                  Kennlinie: Δh vs. Volumenstrom
                 </span>
                 {zoomDomain && (
                   <button onClick={resetZoom} className="ohm-btn" style={{ fontFamily: MONO, fontSize: 10.5, background: "#fff", border: `1px solid ${PANEL_BORDER}`, borderRadius: 4, padding: "3px 8px", color: OHM_RED }}>
@@ -479,7 +494,7 @@ export default function ErgunMonitor() {
         </div>
 
         <div style={{ borderTop: `1px solid ${PANEL_BORDER}`, paddingTop: 10, display: "flex", flexWrap: "wrap", gap: "6px 22px" }}>
-          <span style={{ fontFamily: SANS, fontSize: 11, color: GRAY }}>Ergun: ΔP/L = 150·μ·u₀·(1−ε)²/(ε³·d_K²) + 1,75·ρ·u₀²·(1−ε)/(ε³·d_K)</span>
+          <span style={{ fontFamily: SANS, fontSize: 11, color: GRAY }}>Ergun: ΔP/L = 150·η·u₀·(1−ε)²/(ε³·d_K²) + 1,75·ρ·u₀²·(1−ε)/(ε³·d_K)</span>
           <span style={{ fontFamily: SANS, fontSize: 11, color: GRAY }}>Luft: ideales Gas</span>
           <span style={{ fontFamily: SANS, fontSize: 11, color: GRAY }}>Manometer: gefärbtes Wasser, ρ = 1000 kg/m³ — zeigt den stationären Wert direkt</span>
         </div>
